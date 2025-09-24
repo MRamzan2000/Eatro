@@ -5,7 +5,7 @@ import 'package:responsive_sizer/responsive_sizer.dart';
 
 class CustomTextField extends StatelessWidget {
   final String hintText;
-  final IconData prefixIcon;
+  final IconData? prefixIcon;
   final TextEditingController? controller;
   final TextInputType keyboardType;
   final bool obscureText;
@@ -15,7 +15,7 @@ class CustomTextField extends StatelessWidget {
   const CustomTextField({
     super.key,
     required this.hintText,
-    this.prefixIcon = Icons.search_outlined,
+    this.prefixIcon, // ab optional
     this.controller,
     this.keyboardType = TextInputType.text,
     this.obscureText = false,
@@ -48,22 +48,24 @@ class CustomTextField extends StatelessWidget {
           borderSide: BorderSide(color: AppColors.primaryColor, width: 1.5),
         ),
 
-        // Prefix Icon
-        prefixIcon: Padding(
-          padding: EdgeInsets.only(left: 2.w, right: 0),
+        // Prefix Icon agar diya ho to hi show hoga
+        prefixIcon: prefixIcon != null
+            ? Padding(
+          padding: EdgeInsets.only(left: 2.w),
           child: Icon(
             prefixIcon,
             size: 2.6.h,
             color: AppColors.hintTextColor,
           ),
-        ),
-        prefixIconConstraints: const BoxConstraints(
-          minWidth: 0,
-          minHeight: 0,
-        ),
+        )
+            : null,
+
+        prefixIconConstraints: prefixIcon != null
+            ? const BoxConstraints(minWidth: 0, minHeight: 0)
+            : null,
 
         isDense: true,
-        contentPadding: EdgeInsets.symmetric(vertical: 1.6.h),
+        contentPadding: EdgeInsets.symmetric(vertical: 1.6.h, horizontal: 2.w),
       ),
     );
   }

@@ -46,7 +46,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             getVerticalSpace(height: 1.5.h),
             CupertinoActivityIndicator(
-              radius: 1.7.h,
+              radius: 2.h,
               color: AppColors.primaryColor,
               animating: true,
             ),
