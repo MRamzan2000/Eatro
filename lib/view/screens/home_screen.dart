@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:eatro/controller/getx_controller/auth_controller.dart';
 import 'package:eatro/controller/getx_controller/homeController.dart';
 import 'package:eatro/controller/utils/app_colors.dart';
 import 'package:eatro/controller/utils/app_styles.dart';
@@ -58,12 +59,23 @@ final List<Recipe> recipes = [
   ),
 ];
 
-class HomeScreen extends StatelessWidget {
-  HomeScreen({super.key});
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
   final HomeController controller = Get.put(HomeController());
-  RxBool isFilterShow=false.obs;
 
+  RxBool isFilterShow=false.obs;
+  final authController=Get.find<AuthController>();
+ @override
+  void initState() {
+   authController.getUserData();
+    super.initState();
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -287,6 +299,7 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
+
   Widget greyTag(String text) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -303,6 +316,7 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
+
   Widget stackTags(String text) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
