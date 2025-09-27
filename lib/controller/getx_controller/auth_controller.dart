@@ -15,14 +15,22 @@ class AuthController extends GetxController {
 
   static const String authKey = "eatro-auth";
   static const String identityKey = "eatro-identity-chosen";
+
   final GoogleSignIn googleSignIn = GoogleSignIn.instance;
+
+  Future<void> initGoogleSignIn() async {
+    await googleSignIn.initialize(
+      clientId: "811434924053-2fohlijj3hk50lcrn2isipm38ofbkmbv.apps.googleusercontent.com",
+    );
+  }
 
   @override
   void onInit() {
     super.onInit();
+    initGoogleSignIn();
     _loadUser();
   }
-
+  // Load user
   Future<void> _loadUser() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -43,6 +51,7 @@ class AuthController extends GetxController {
     }
   }
 
+  // Save User
   Future<void> _saveUser(UserModel newUser) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -61,13 +70,18 @@ class AuthController extends GetxController {
     }
   }
 
+  // Sign In With Google
   Future<void> signInWithGoogle() async {
     try {
       isLoading.value = true;
-      final GoogleSignInAccount? googleUser = await googleSignIn.authenticate();
 
-      if (googleUser == null) {
-        throw Exception("Google Sign-In cancelled by user");
+      GoogleSignInAccount? googleUser;
+
+      if (googleSignIn.supportsAuthenticate()) {
+        googleUser = await googleSignIn.authenticate();
+      } else {
+        await googleSignIn.signOut(); // force chooser
+        googleUser = await googleSignIn.authenticate();
       }
 
       final newUser = UserModel(
@@ -77,7 +91,9 @@ class AuthController extends GetxController {
         provider: "google",
         avatar: googleUser.photoUrl,
       );
+
       await _saveUser(newUser);
+
       Get.back();
       await Future.delayed(const Duration(milliseconds: 300));
       Get.snackbar("Success", "Signed in with Google successfully",
@@ -91,6 +107,7 @@ class AuthController extends GetxController {
     }
   }
 
+  // Get User Data
   Future<UserModel?> getUserData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -101,13 +118,13 @@ class AuthController extends GetxController {
       } else {
         if (kDebugMode) {
           print("No user data found in SharedPreferences");
-        } // Debug log
+        }
         return null;
       }
     } catch (e) {
       if (kDebugMode) {
         print("Error retrieving user data: $e");
-      } // Debug log
+      }
       if (e is MissingPluginException) {
         Get.snackbar("Error", "SharedPreferences plugin not initialized",
             backgroundColor: Colors.red, colorText: Colors.white);
@@ -116,6 +133,7 @@ class AuthController extends GetxController {
     }
   }
 
+  // Validate email
   String? validateEmail(String? value) {
     if (value == null || value.isEmpty) {
       return "Email is required";
@@ -127,6 +145,7 @@ class AuthController extends GetxController {
     return null;
   }
 
+  //Validate password
   String? validatePassword(String? value) {
     if (value == null || value.isEmpty) {
       return "Password is required";
@@ -137,6 +156,7 @@ class AuthController extends GetxController {
     return null;
   }
 
+  // validate name
   String? validateName(String? value) {
     if (value == null || value.isEmpty) {
       return "Name is required";
@@ -147,6 +167,7 @@ class AuthController extends GetxController {
     return null;
   }
 
+  //Email Sign-In
   Future<void> signInWithEmail(String email, String password) async {
     try {
       isLoading.value = true;
@@ -157,8 +178,8 @@ class AuthController extends GetxController {
 
       if (kDebugMode) {
         print("Signing in: $email");
-      } // Debug log
-      await Future.delayed(const Duration(seconds: 1)); // Mock delay
+      }
+      await Future.delayed(const Duration(seconds: 1));
       final newUser = UserModel(
         id: "email_${DateTime.now().millisecondsSinceEpoch}",
         name: email.split("@")[0],
@@ -168,12 +189,12 @@ class AuthController extends GetxController {
       await _saveUser(newUser);
       Get.back();
       await Future.delayed(const Duration(milliseconds: 300));
-      Get.snackbar("Success", "Signed in with Google successfully",
+      Get.snackbar("Success", "Signed in successfully",
           backgroundColor: Colors.green, colorText: Colors.white);
     } catch (e) {
       if (kDebugMode) {
         print("Sign-in error: $e");
-      } // Debug log
+      }
       Get.snackbar("Error", e.toString().replaceFirst("Exception: ", ""),
           backgroundColor: Colors.red, colorText: Colors.white);
     } finally {
@@ -181,6 +202,7 @@ class AuthController extends GetxController {
     }
   }
 
+  //Email Sign-Up
   Future<void> signUpWithEmail(String email, String password, String name) async {
     try {
       isLoading.value = true;
@@ -193,8 +215,8 @@ class AuthController extends GetxController {
 
       if (kDebugMode) {
         print("Creating user: $email, $name");
-      } // Debug log
-      await Future.delayed(const Duration(seconds: 1)); // Mock delay
+      }
+      await Future.delayed(const Duration(seconds: 1));
       final newUser = UserModel(
         id: "email_${DateTime.now().millisecondsSinceEpoch}",
         name: name,
@@ -209,7 +231,7 @@ class AuthController extends GetxController {
     } catch (e) {
       if (kDebugMode) {
         print("Sign-up error: $e");
-      } // Debug log
+      }
       Get.snackbar("Error", e.toString().replaceFirst("Exception: ", ""),
           backgroundColor: Colors.red, colorText: Colors.white);
     } finally {
@@ -217,18 +239,20 @@ class AuthController extends GetxController {
     }
   }
 
+  //Continue as Guest
   Future<void> continueAsGuest() async {
     try {
       isLoading.value = true;
       if (kDebugMode) {
         print("Continuing as guest");
-      } // Debug log
-      await Future.delayed(const Duration(seconds: 1)); // Mock delay
+      }
+      await Future.delayed(const Duration(seconds: 1));
       final newUser = UserModel(
         id: "guest_${DateTime.now().millisecondsSinceEpoch}",
         name: "Guest User",
         email: "",
         provider: "guest",
+        avatar: "assets/images/user.png"
       );
       await _saveUser(newUser);
       Get.back();
@@ -238,7 +262,7 @@ class AuthController extends GetxController {
     } catch (e) {
       if (kDebugMode) {
         print("Guest sign-in error: $e");
-      } // Debug log
+      }
       Get.snackbar("Error", "Failed to continue as guest: $e",
           backgroundColor: Colors.red, colorText: Colors.white);
     } finally {
@@ -246,24 +270,26 @@ class AuthController extends GetxController {
     }
   }
 
+  //Sign Out
   Future<void> signOut() async {
     try {
       isLoading.value = true;
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(authKey);
       await prefs.remove(identityKey);
+      await googleSignIn.signOut();
       user.value = null;
       isAuthenticated.value = false;
       isGuest.value = false;
       if (kDebugMode) {
         print("Signed out");
-      } // Debug log
+      }
       Get.snackbar("Success", "Signed out successfully",
           backgroundColor: Colors.green, colorText: Colors.white);
     } catch (e) {
       if (kDebugMode) {
         print("Sign-out error: $e");
-      } // Debug log
+      }
       Get.snackbar("Error", "Failed to sign out: $e",
           backgroundColor: Colors.red, colorText: Colors.white);
     } finally {
@@ -271,6 +297,7 @@ class AuthController extends GetxController {
     }
   }
 
+  //Delete Account (Local only)
   Future<void> deleteAccount() async {
     try {
       isLoading.value = true;
@@ -279,18 +306,19 @@ class AuthController extends GetxController {
       await prefs.remove("eatro-preferences");
       await prefs.remove(authKey);
       await prefs.remove(identityKey);
+      await googleSignIn.signOut();
       user.value = null;
       isAuthenticated.value = false;
       isGuest.value = false;
       if (kDebugMode) {
         print("Account deleted");
-      } // Debug log
+      }
       Get.snackbar("Success", "Account deleted successfully",
           backgroundColor: Colors.green, colorText: Colors.white);
     } catch (e) {
       if (kDebugMode) {
         print("Delete account error: $e");
-      } // Debug log
+      }
       Get.snackbar("Error", "Failed to delete account: $e",
           backgroundColor: Colors.red, colorText: Colors.white);
     } finally {

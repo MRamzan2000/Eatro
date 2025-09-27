@@ -9,17 +9,34 @@ class HomeController extends GetxController {
 
   /// Options
   final List<String> cuisines = [
-    "Italian",
     "Chinese",
-    "Pakistani",
-    "Indian",
+    "Japanese",
+    "Korean",
+    "Vietnamese",
+    "Thai",
+    "Italian",
+    "French",
+    "Mexican",
+    "American",
+    "Mediterranean",
+    "Global",
+    "Fusion",
+    "Vegetarian",
+    "Vegan",
+    "Gluten-Free",
   ];
 
   final List<String> mealTypes = [
     "Breakfast",
     "Lunch",
     "Dinner",
-    "Snack",
+    "Romantic",
+    "Birthday",
+    "Party",
+    "Special",
+    "Occasion",
+    "Dessert",
+    "Staple Food",
   ];
 
   final List<String> healthGoals = [
@@ -27,7 +44,25 @@ class HomeController extends GetxController {
     "Blood Sugar Friendly",
     "Cholesterol Friendly",
     "Kidney Friendly",
+    "Liver Friendly",
+    "Digestive Health",
+    "Gut Health",
+    "Healthy Weight",
+    "Lower Sodium",
+    "Lower Carb",
+    "High Fiber",
+    "Immune Wellness",
+    "Senior-Friendly",
+    "Iron Rich",
+    "Higher in Protein",
+    "Bone Health",
+    "Brain Boost",
+    "Supports Thyroid Health",
+    "Supports Lung Health",
+    "Skin & Hair Health",
+    "Energy Boost",
   ];
+
 
   final List<String> sortOptions = [
     "Name (A-Z)",

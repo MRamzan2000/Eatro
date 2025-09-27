@@ -1,4 +1,4 @@
-package com.example.eatro;
+package com.jollybunny.eatro;
 
 import io.flutter.embedding.android.FlutterActivity;
 

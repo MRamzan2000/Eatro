@@ -4,6 +4,7 @@ import 'package:eatro/controller/getx_controller/auth_controller.dart';
 import 'package:eatro/controller/getx_controller/homeController.dart';
 import 'package:eatro/controller/utils/app_colors.dart';
 import 'package:eatro/controller/utils/app_styles.dart';
+import 'package:eatro/model/user_model.dart';
 import 'package:eatro/view/reuseable_widgets/horizontal_space.dart';
 import 'package:eatro/view/reuseable_widgets/textfiled.dart';
 import 'package:eatro/view/reuseable_widgets/verticle_space.dart';
@@ -71,6 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   RxBool isFilterShow=false.obs;
   final authController=Get.find<AuthController>();
+  var user = Rxn<UserModel>();
  @override
   void initState() {
    authController.getUserData();
@@ -478,7 +480,11 @@ class _HomeScreenState extends State<HomeScreen> {
         style: AppTextStyles.headingLarge.copyWith(fontSize: 19.sp),
       ),
       actions: [
-        GestureDetector(onTap: (){
+       // CircleAvatar(
+       //    child: ,
+       //  ),
+        GestureDetector(onTap: ()
+        {
           log(6677);
           Get.dialog(AuthOptionsDialog());
         },

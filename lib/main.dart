@@ -27,6 +27,7 @@ class MyApp extends StatelessWidget {
             appBarTheme: AppBarTheme(
               backgroundColor: AppColors.cardBgColor,
               elevation: 0,
+              centerTitle: true,
               titleTextStyle: TextStyle(
                 color: AppColors.headingColor,
                 fontSize: 18,

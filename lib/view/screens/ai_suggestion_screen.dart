@@ -121,7 +121,7 @@ class AiSuggestionScreen extends StatelessWidget {
                     ),
                     getVerticalSpace(height: 1.5.h),
                     Text(
-                      "You can ask me anything about recipes, dietary needs, or ingredients. For example:",
+                      "You can ask me anything about recipes, dietary needs, or ingredients. For jollybunny:",
                       style: TextStyle(fontSize: 15.sp, color: Colors.black54),
                     ),
                     getVerticalSpace(height: 1.h),
