@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "31803384853",
+    "project_id": "eatro-cd012",
+    "storage_bucket": "eatro-cd012.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:31803384853:android:1d94d7eff35b6b8b37da1c",
+        "android_client_info": {
+          "package_name": "com.jollybunny.eatro"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBIBgj55NZynR32KYFPabXiCQ5i9DsWPTc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

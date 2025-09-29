@@ -1,6 +1,9 @@
+import 'dart:io';
 import 'package:eatro/controller/getx_controller/auth_controller.dart';
+import 'package:eatro/controller/utils/app_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:eatro/controller/utils/app_colors.dart';
 import 'package:eatro/controller/utils/app_styles.dart';
@@ -258,7 +261,7 @@ class SignInDialog extends StatelessWidget {
                         : () async {
                       if (formKey.currentState!.validate()) {
                         try {
-                          await controller.signInWithEmail(
+                          await controller.login(
                               emailController.text,
                               passwordController.text);
                         } catch (e) {
@@ -338,6 +341,7 @@ class SignUpDialog extends StatelessWidget {
     final emailController = TextEditingController();
     final passwordController = TextEditingController();
     final obscureText = true.obs; // For password visibility toggle
+    final selectedImage = Rxn<XFile>(); // For image selection
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
@@ -365,6 +369,29 @@ class SignUpDialog extends StatelessWidget {
                   ],
                 ),
                 SizedBox(height: 2.h),
+
+                /// Image Picker
+                Center(
+                  child: GestureDetector(
+                    onTap: () async {
+                      final picker = ImagePicker();
+                      final picked = await picker.pickImage(source: ImageSource.gallery);
+                      if (picked != null) {
+                        selectedImage.value = picked;
+                      }
+                    },
+                    child: Obx(() => CircleAvatar(
+                      radius: 40,
+                      backgroundImage: selectedImage.value != null
+                          ? FileImage(File(selectedImage.value!.path))
+                          : null,
+                      child: selectedImage.value == null
+                          ? const Icon(Icons.add_photo_alternate, size: 40)
+                          : null,
+                    )),
+                  ),
+                ),
+                SizedBox(height: 1.5.h),
 
                 /// Name
                 TextFormField(
@@ -426,11 +453,18 @@ class SignUpDialog extends StatelessWidget {
                         ? null
                         : () async {
                       if (formKey.currentState!.validate()) {
+                        if (selectedImage.value == null) {
+                          controller.errorMessage.value = "Please select an image";
+                          AppSnackbar.showError(controller.errorMessage.value);
+                          return;
+                        }
                         try {
-                          await controller.signUpWithEmail(
-                              emailController.text,
-                              passwordController.text,
-                              nameController.text);
+                          await controller.signUp(
+                            emailController.text,
+                            passwordController.text,
+                            nameController.text,
+                            photoUrl: selectedImage.value!.path,
+                          );
                         } catch (e) {
                           // Error handled in controller
                         }

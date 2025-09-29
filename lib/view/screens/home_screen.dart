@@ -1,19 +1,23 @@
-import 'dart:math';
+import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:eatro/controller/getx_controller/auth_controller.dart';
 import 'package:eatro/controller/getx_controller/homeController.dart';
 import 'package:eatro/controller/utils/app_colors.dart';
 import 'package:eatro/controller/utils/app_styles.dart';
-import 'package:eatro/model/user_model.dart';
 import 'package:eatro/view/reuseable_widgets/horizontal_space.dart';
 import 'package:eatro/view/reuseable_widgets/textfiled.dart';
 import 'package:eatro/view/reuseable_widgets/verticle_space.dart';
-import 'package:eatro/view/screens/auth_options_dialog.dart';
 import 'package:eatro/view/screens/recipe_Detail_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
+import 'package:shimmer/shimmer.dart';
+
+import 'auth_options_dialog.dart';
+
 
 class Recipe {
   final String title;
@@ -69,109 +73,90 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final HomeController controller = Get.put(HomeController());
+  final authController = Get.find<AuthController>();
+  RxBool isFilterShow = false.obs;
 
-  RxBool isFilterShow=false.obs;
-  final authController=Get.find<AuthController>();
-  var user = Rxn<UserModel>();
- @override
+  @override
   void initState() {
-   authController.getUserData();
     super.initState();
+    authController.fetchUserData();
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: _buildAppBar(),
-      body: Container(
+      body: Padding(
         padding: EdgeInsets.symmetric(horizontal: 4.w),
-        width: double.infinity,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             getVerticalSpace(height: 1.5.h),
-            CustomTextField(hintText: "Try: Italian Dinner, Low Carb",
-            prefixIcon: Icons.search_outlined,),
+            const CustomTextField(
+              hintText: "Try: Italian Dinner, Low Carb",
+              prefixIcon: Icons.search_outlined,
+            ),
             getVerticalSpace(height: 1.5.h),
 
             /// Filter Box
-            Obx(
-                ()=> Container(
-                padding: EdgeInsets.all(12.px),
-                decoration: BoxDecoration(
-                  color: AppColors.cardBgColor,
-                  borderRadius: BorderRadius.circular(15.px),
-                ),
-                child:isFilterShow.value? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildFilterHeading(),
-                    getVerticalSpace(height: 2.h),
-
-                    /// Cuisine Dropdown
-                    _buildLabel("Cuisines"),
-                    getVerticalSpace(height: 1.h),
-                    Obx(() => _buildDropdown(
-                      hint: "Select cuisines...",
-                      value: controller.selectedCuisine?.value.isEmpty == true
-                          ? null
-                          : controller.selectedCuisine?.value,
-                      items: controller.cuisines,
-                      onChanged: (val) =>
-                      controller.selectedCuisine?.value = val ?? '',
-                    )),
-                    getVerticalSpace(height: 2.h),
-
-                    /// Meal Types Dropdown
-                    _buildLabel("Meal Types"),
-                    getVerticalSpace(height: 1.h),
-                    Obx(() => _buildDropdown(
-                      hint: "Select meal types...",
-                      value: controller.selectedMeal?.value.isEmpty == true
-                          ? null
-                          : controller.selectedMeal?.value,
-                      items: controller.mealTypes,
-                      onChanged: (val) =>
-                      controller.selectedMeal?.value = val ?? '',
-                    )),
-                    getVerticalSpace(height: 2.h),
-
-                    /// Health Goals Dropdown
-                    _buildLabel("Health Goals"),
-                    getVerticalSpace(height: 1.h),
-                    Obx(() => _buildDropdown(
-                      hint: "Select health goals...",
-                      value: controller.selectedHealth?.value.isEmpty == true
-                          ? null
-                          : controller.selectedHealth?.value,
-                      items: controller.healthGoals,
-                      onChanged: (val) =>
-                      controller.selectedHealth?.value = val ?? '',
-                    )),
-                    getVerticalSpace(height: 2.h),
-
-                    /// Sort
-                    _buildLabel("⇅ Sort By"),
-                    getVerticalSpace(height: 1.h),
-                    Obx(() => _buildSortBox(context)),
-                  ],
-                ):  _buildFilterHeading(),
+            Obx(() => Container(
+              padding: EdgeInsets.all(12.px),
+              decoration: BoxDecoration(
+                color: AppColors.cardBgColor,
+                borderRadius: BorderRadius.circular(15.px),
               ),
-            ),
+              child: isFilterShow.value
+                  ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildFilterHeading(),
+                  getVerticalSpace(height: 2.h),
+                  _buildDropdownSection("Cuisines", controller.cuisines,
+                      controller.selectedCuisine),
+                  _buildDropdownSection("Meal Types",
+                      controller.mealTypes, controller.selectedMeal),
+                  _buildDropdownSection("Health Goals",
+                      controller.healthGoals, controller.selectedHealth),
+                  _buildLabel("⇅ Sort By"),
+                  getVerticalSpace(height: 1.h),
+                  Obx(() => _buildSortBox(context)),
+                ],
+              )
+                  : _buildFilterHeading(),
+            )),
 
             /// Recipes List
             Expanded(
               child: ListView.builder(
                 padding: EdgeInsets.only(top: 2.h),
                 itemCount: recipes.length,
-                itemBuilder: (context, index) {
-                  final recipe = recipes[index];
-                  return _buildRecipeCard(recipe);
-                },
+                itemBuilder: (context, index) => _buildRecipeCard(recipes[index]),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  /// Dropdown Section Builder
+  Widget _buildDropdownSection(
+      String label, List<String> items, RxString? selectedValue) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel(label),
+        getVerticalSpace(height: 1.h),
+        Obx(() => _buildDropdown(
+          hint: "Select $label...",
+          value: selectedValue?.value.isEmpty == true
+              ? null
+              : selectedValue?.value,
+          items: items,
+          onChanged: (val) => selectedValue?.value = val ?? '',
+        )),
+        getVerticalSpace(height: 2.h),
+      ],
     );
   }
 
@@ -186,7 +171,7 @@ class _HomeScreenState extends State<HomeScreen> {
           BoxShadow(
             color: Colors.black12,
             blurRadius: 6,
-            offset: Offset(0, 3),
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -196,28 +181,17 @@ class _HomeScreenState extends State<HomeScreen> {
           /// Image + icons
           Stack(
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                child: Image.network(
-                  recipe.imageUrl,
-                  height: 22.h,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-              ),
+              _buildRecipeImage(recipe.imageUrl),
               Positioned(
-                top: 8,
-                left: 8,
-                child:GestureDetector(
-                    onTap: () {
-                     Get.to(()=>RecipeDetailPage(
-                       title: recipe.title,
-                       cuisine: recipe.cuisine,
-                       imageUrl: recipe.imageUrl,
-                     ),);
-                    },
-                    child: stackTags(recipe.mealType))
-              ),
+                  top: 8,
+                  left: 8,
+                  child: GestureDetector(
+                      onTap: () => Get.to(() => RecipeDetailPage(
+                        title: recipe.title,
+                        cuisine: recipe.cuisine,
+                        imageUrl: recipe.imageUrl,
+                      )),
+                      child: stackTags(recipe.mealType))),
               Positioned(
                 top: 8,
                 right: 8,
@@ -229,22 +203,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-              Positioned(
-                  bottom: 1.3.h,
-                  left: 8,
-                  child:stackTags(recipe.cuisine)
-              ),
+              Positioned(bottom: 1.3.h, left: 8, child: stackTags(recipe.cuisine)),
             ],
           ),
 
           Padding(
-            padding: EdgeInsets.all(12),
+            padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
                 getVerticalSpace(height: 1.h),
-                /// Title
                 Text(
                   recipe.title,
                   style: AppTextStyles.headingLarge.copyWith(
@@ -252,9 +220,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                getVerticalSpace(height: 1.h),
                 if (recipe.note != null) ...[
-                  SizedBox(height: 4),
+                  getVerticalSpace(height: 1.h),
                   Text(
                     recipe.note!,
                     style: AppTextStyles.subHeading.copyWith(
@@ -264,18 +231,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
                 getVerticalSpace(height: 2.h),
-
-
-                /// Cuisine + Meal
-                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    greyTag(recipe.cuisine),
-                    getHorizontalSpace(width: 1.4.w),
-                    _tag(recipe.mealType),
-                  ],
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [greyTag(recipe.cuisine), _tag(recipe.mealType)],
                 ),
-                getVerticalSpace(height: 1.h),
-
               ],
             ),
           ),
@@ -284,66 +243,17 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Reusable Tag
-  Widget _tag(String text) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.primaryColor.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        text,
-        style: AppTextStyles.headingMedium.copyWith(
-          color: AppColors.primaryColor,
-          fontSize: 15.sp
-        )
-      ),
-    );
-  }
-
-  Widget greyTag(String text) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.hintTextColor.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        text,
-        style: AppTextStyles.headingMedium.copyWith(
-          color: AppColors.primaryColor,
-          fontSize: 15.sp
-        )
-      ),
-    );
-  }
-
-  Widget stackTags(String text) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        text,
-        style: AppTextStyles.headingMedium.copyWith(
-          color: AppColors.primaryColor,
-          fontSize: 15.sp
-        )
-      ),
-    );
-  }
+  Widget _buildRecipeImage(String url) => ClipRRect(
+    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+    child: Image.network(url, height: 22.h, width: double.infinity, fit: BoxFit.cover),
+  );
 
   /// Circle Icon
-  Widget _circleIcon(IconData icon) {
-    return CircleAvatar(
-      radius: 18,
-      backgroundColor: Colors.white,
-      child: Icon(icon, size: 18, color: Colors.black87),
-    );
-  }
+  Widget _circleIcon(IconData icon) => CircleAvatar(
+    radius: 18,
+    backgroundColor: Colors.white,
+    child: Icon(icon, size: 18, color: Colors.black87),
+  );
 
   /// Reusable Dropdown
   Widget _buildDropdown({
@@ -359,25 +269,16 @@ class _HomeScreenState extends State<HomeScreen> {
         contentPadding: const EdgeInsets.symmetric(vertical: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: Colors.grey.withOpacity(0.4),
-          ),
+          borderSide: BorderSide(color: Colors.grey.withOpacity(0.4)),
         ),
       ),
-      hint: Text(
-        hint,
-        style: AppTextStyles.subHeading.copyWith(
-          fontSize: 15.sp,
-          color: AppColors.hintTextColor,
-        ),
-      ),
+      hint: Text(hint,
+          style: AppTextStyles.subHeading
+              .copyWith(fontSize: 15.sp, color: AppColors.hintTextColor)),
       items: items
           .map((item) => DropdownMenuItem<String>(
         value: item,
-        child: Text(
-          item,
-          style: AppTextStyles.subHeading.copyWith(fontSize: 15.sp),
-        ),
+        child: Text(item, style: AppTextStyles.subHeading.copyWith(fontSize: 15.sp)),
       ))
           .toList(),
       onChanged: onChanged,
@@ -386,9 +287,7 @@ class _HomeScreenState extends State<HomeScreen> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           color: Colors.white,
-          border: Border.all(
-            color: Colors.grey.withOpacity(0.4),
-          ),
+          border: Border.all(color: Colors.grey.withOpacity(0.4)),
         ),
       ),
       menuItemStyleData: const MenuItemStyleData(
@@ -398,46 +297,146 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// AppBar with User Data
+  AppBar _buildAppBar() {
+    return AppBar(
+      titleSpacing: 2.5.w,
+      leadingWidth: 16.w,
+      toolbarHeight: 8.h,
+      leading: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 10, 0, 12),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(13.px),
+          child: Image.asset("assets/images/applogo.png", fit: BoxFit.cover),
+        ),
+      ),
+      title: Text("Eatro", style: AppTextStyles.headingLarge.copyWith(fontSize: 19.sp)),
+      actions: [
+        StreamBuilder<DocumentSnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection("users")
+              .doc(FirebaseAuth.instance.currentUser?.uid)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return _buildShimmerAvatar(); // Loading shimmer
+            }
+
+            if (!snapshot.hasData || !snapshot.data!.exists) {
+              return GestureDetector(
+                onTap: () => Get.dialog(AuthOptionsDialog()),
+                child: Padding(
+                  padding: EdgeInsets.only(right: 15.px),
+                  child: Text(
+                    "Sign In",
+                    style: AppTextStyles.headingLarge.copyWith(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primaryColor,
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            // User data
+            final userData = snapshot.data!.data() as Map<String, dynamic>;
+            final profileUrl = userData["profile"] ?? "";
+
+            return GestureDetector(
+              onTap: () => print("Avatar clicked"),
+              child: Padding(
+                padding: EdgeInsets.only(right: 15.px),
+                child: CircleAvatar(
+                  radius: 18,
+                  backgroundImage: (profileUrl.isNotEmpty)
+                      ? FileImage(File(profileUrl)) // ✅ Real-time load
+                      : const AssetImage("assets/images/avatar_placeholder.png")
+                  as ImageProvider,
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+
+    );
+  }
+
+
+  Widget _buildShimmerAvatar() => Padding(
+    padding: EdgeInsets.only(right: 15.px),
+    child: Shimmer.fromColors(
+      baseColor: Colors.grey.shade300,
+      highlightColor: Colors.grey.shade100,
+      child: const CircleAvatar(radius: 18, backgroundColor: Colors.grey),
+    ),
+  );
+
+  /// Section Label
+  Widget _buildLabel(String text) => Text(text,
+      style: AppTextStyles.headingLarge.copyWith(
+        fontSize: 16.sp,
+        fontWeight: FontWeight.w800,
+        color: AppColors.headingColor.withOpacity(0.7),
+      ));
+
+  /// Filter Heading
+  Widget _buildFilterHeading() => Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    crossAxisAlignment: CrossAxisAlignment.end,
+    children: [
+      Row(children: [
+        Icon(Icons.filter_alt_outlined,
+            size: 2.8.h, color: AppColors.headingColor.withOpacity(0.7)),
+        getHorizontalSpace(width: 1.w),
+        Text("Filter Recipes",
+            style: AppTextStyles.headingLarge.copyWith(
+              fontSize: 17.sp,
+              fontWeight: FontWeight.w800,
+              color: AppColors.headingColor.withOpacity(0.7),
+            ))
+      ]),
+      GestureDetector(
+        onTap: () => isFilterShow.value = !isFilterShow.value,
+        child: Icon(Icons.arrow_drop_down_outlined,
+            size: 3.h, color: AppColors.headingColor.withOpacity(0.7)),
+      ),
+    ],
+  );
+
+  /// Tags
+  Widget _tag(String text) => _buildTag(text, AppColors.primaryColor.withOpacity(0.2), AppColors.primaryColor);
+  Widget greyTag(String text) => _buildTag(text, AppColors.hintTextColor.withOpacity(0.2), AppColors.primaryColor);
+  Widget stackTags(String text) => _buildTag(text, Colors.white, AppColors.primaryColor);
+
+  Widget _buildTag(String text, Color bg, Color color) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
+    child: Text(text, style: AppTextStyles.headingMedium.copyWith(color: color, fontSize: 15.sp)),
+  );
+
   /// Sort Box
   Widget _buildSortBox(BuildContext context) {
     return InkWell(
       onTap: () async {
         final result = await showDialog<String>(
           context: context,
-          builder: (ctx) {
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Container(
-                padding:
-                const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: controller.sortOptions.map((opt) {
-                    return Obx(() => RadioListTile<String>(
-                      value: opt,
-                      groupValue: controller.selectedSort.value,
-                      activeColor: Colors.black,
-                      title: Text(opt),
-                      onChanged: (val) {
-                        Navigator.pop(ctx, val);
-                      },
-                    ));
-                  }).toList(),
-                ),
-              ),
-            );
-          },
+          builder: (ctx) => Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: controller.sortOptions.map((opt) => Obx(() => RadioListTile<String>(
+                value: opt,
+                groupValue: controller.selectedSort.value,
+                activeColor: Colors.black,
+                title: Text(opt),
+                onChanged: (val) => Navigator.pop(ctx, val),
+              ))).toList(),
+            ),
+          ),
         );
-
-        if (result != null) {
-          controller.selectedSort.value = result;
-        }
+        if (result != null) controller.selectedSort.value = result;
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
@@ -455,94 +454,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  /// AppBar
-  AppBar _buildAppBar() {
-    return AppBar(
-      titleSpacing: 2.5.w,
-      leadingWidth: 16.w,
-      toolbarHeight: 8.h,
-      leading: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 10, 0, 12),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(13.px),
-          child: Image.asset(
-            "assets/images/applogo.png",
-            height: 2.4.h,
-            fit: BoxFit.cover,
-          ),
-        ),
-      ),
-      title: Text(
-        "Eatro",
-        style: AppTextStyles.headingLarge.copyWith(fontSize: 19.sp),
-      ),
-      actions: [
-       // CircleAvatar(
-       //    child: ,
-       //  ),
-        GestureDetector(onTap: ()
-        {
-          log(6677);
-          Get.dialog(AuthOptionsDialog());
-        },
-          child: Text(
-            "Sign In",
-            style: AppTextStyles.subHeading.copyWith(fontSize: 16.sp),
-          ),
-        ),
-      ],
-      actionsPadding: EdgeInsets.only(right: 15.px),
-    );
-  }
-
-  /// Section Label
-  Widget _buildLabel(String text) {
-    return Text(
-      text,
-      style: AppTextStyles.headingLarge.copyWith(
-        fontSize: 16.sp,
-        fontWeight: FontWeight.w800,
-        color: AppColors.headingColor.withOpacity(0.7),
-      ),
-    );
-  }
-
-  /// Filter Heading
-  Widget _buildFilterHeading() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-       Row(children: [
-         Icon(
-           Icons.filter_alt_outlined,
-           size: 2.8.h,
-           color: AppColors.headingColor.withOpacity(0.7),
-         ),
-         getHorizontalSpace(width: 1.w),
-         Text(
-           "Filter Recipes",
-           style: AppTextStyles.headingLarge.copyWith(
-             fontSize: 17.sp,
-             fontWeight: FontWeight.w800,
-             color: AppColors.headingColor.withOpacity(0.7),
-           ),
-         )
-       ],),
-        GestureDetector(
-          onTap: (){
-            isFilterShow.value=!isFilterShow.value;
-          },
-          child: Icon(
-            Icons.arrow_drop_down_outlined,
-            size: 3.h,
-            color: AppColors.headingColor.withOpacity(0.7),
-          ),
-        ),
-      ],
     );
   }
 }
