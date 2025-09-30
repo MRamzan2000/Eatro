@@ -1,4 +1,5 @@
 import 'package:eatro/controller/utils/app_colors.dart';
+import 'package:eatro/controller/utils/app_snackbar.dart';
 import 'package:eatro/controller/utils/app_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -105,7 +106,7 @@ class _SettingScreenState extends State<SettingScreen> {
             ),
             GestureDetector(
               onTap: () {
-                _showConfirmDialog(
+                AppSnackbar.showConfirmDialog(
                   context,
                   "Delete Account",
                   "This action cannot be undone. Delete your account?",
@@ -132,7 +133,7 @@ class _SettingScreenState extends State<SettingScreen> {
             ),
             GestureDetector(
               onTap: () {
-                _showConfirmDialog(
+                AppSnackbar.showConfirmDialog(
                   context,
                   "Logout",
                   "Are you sure you want to logout?",
@@ -158,91 +159,5 @@ class _SettingScreenState extends State<SettingScreen> {
     );
   }
 
-  /// Confirmation Dialog
-  void _showConfirmDialog(BuildContext context, String title, String message) {
-    final bool isLogout = title == "Logout";
 
-    showDialog(
-      context: context,
-      builder:
-          (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
-            title: Text(
-              title,
-              style: AppTextStyles.headingLarge.copyWith(
-                fontSize: 18.sp,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            content: Text(
-              message,
-              style: AppTextStyles.subHeading.copyWith(
-                fontSize: 15.sp,
-                color: Colors.black87,
-              ),
-            ),
-            actionsPadding: EdgeInsets.symmetric(
-              horizontal: 2.w,
-              vertical: 1.h,
-            ),
-            actions: [
-              OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: Colors.grey.shade400),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 4.w,
-                    vertical: 1.5.h,
-                  ),
-                ),
-                onPressed: () => Navigator.pop(ctx),
-                child: Text(
-                  "Cancel",
-                  style: TextStyle(
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isLogout ? Colors.blue : Colors.red,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 5.w,
-                    vertical: 1.5.h,
-                  ),
-                  elevation: 0,
-                ),
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  if (isLogout) {
-                    Get.snackbar(
-                      "Logged Out",
-                      "You have been logged out successfully!",
-                    );
-                  } else {
-                    Get.snackbar("Deleted", "Your account has been deleted.");
-                  }
-                },
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-    );
-  }
 }

@@ -1,11 +1,13 @@
 import 'dart:developer';
 
+import 'package:eatro/controller/getx_controller/profile_controller.dart';
 import 'package:eatro/controller/services/auth_services.dart';
 import 'package:eatro/controller/utils/app_snackbar.dart';
 import 'package:eatro/controller/utils/my_shared_pref.dart';
 import 'package:eatro/model/user_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 class AuthController extends GetxController {
@@ -18,7 +20,7 @@ class AuthController extends GetxController {
   RxBool isLoading = false.obs;
   var errorMessage = "".obs;
 
-  // -------------------- VALIDATORS --------------------
+  // VALIDATORS
   String? validateEmail(String? value) {
     if (value == null || value.isEmpty) return "Email is required";
     final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
@@ -38,7 +40,7 @@ class AuthController extends GetxController {
     return null;
   }
 
-  // -------------------- SIGN UP --------------------
+  // SIGN UP
   Future<void> signUp(String email, String password, String name, {String? photoUrl}) async {
     try {
       isLoading.value = true;
@@ -79,7 +81,7 @@ class AuthController extends GetxController {
     }
   }
 
-  // -------------------- LOGIN --------------------
+  // LOGIN
   Future<void> login(String email, String password) async {
     try {
       isLoading.value = true;
@@ -115,7 +117,7 @@ class AuthController extends GetxController {
     }
   }
 
-  // -------------------- GOOGLE SIGN IN --------------------
+  // GOOGLE SIGN IN
   Future<void> signInWithGoogle() async {
     try {
       isLoading.value = true;
@@ -151,13 +153,14 @@ class AuthController extends GetxController {
     }
   }
 
-  // -------------------- CONTINUE AS GUEST --------------------
+  // CONTINUE AS GUEST
   Future<void> continueAsGuest() async {
     try {
       isLoading.value = true;
       errorMessage.value = "";
 
-      User? user = await _authServices.continueAsGuest();
+      User? user = await _authServices.signUpWithEmailAndPassword(email: "guest@gmail.com", password: '1234567',
+          name: 'guest', profile: 'https://media.istockphoto.com/id/587805156/vector/profile-picture-vector-illustration.jpg?s=612x612&w=is&k=20&c=-Jq_6tAjuYieAjOB5B1CyUXSrD_tKE3IKZwVGIjn8-8=');
 
       if (user != null) {
         currentUser.value = user;
@@ -168,7 +171,7 @@ class AuthController extends GetxController {
 
         await SharedPrefHelper.saveUser(
           uid: user.uid,
-          email: "",
+          email: "guest@gmail.com",
           name: guestName,
         );
 
@@ -189,17 +192,20 @@ class AuthController extends GetxController {
     }
   }
 
-  // -------------------- LOGOUT --------------------
-  Future<void> logout() async {
+  Future<void> logout({required BuildContext context}) async {
     try {
       isLoading.value = true;
       await _authServices.auth.signOut();
       currentUser.value = null;
       isGuest.value = false;
       isAuthenticated.value = false;
+      if (Get.isRegistered<ProfileController>()) {
+        Get.delete<ProfileController>(force: true);
+      }
 
       await SharedPrefHelper.logout();
       AppSnackbar.showSuccess("Logged out successfully");
+      Navigator.pop(context);
     } on FirebaseAuthException catch (e) {
       errorMessage.value = e.message ?? "Logout failed.";
       AppSnackbar.showError(errorMessage.value);
@@ -211,7 +217,8 @@ class AuthController extends GetxController {
     }
   }
 
-  // -------------------- FETCH USER DATA --------------------
+
+  // FETCH USER DATA
   Future<void> fetchUserData() async {
     try {
       isLoading.value = true;
@@ -240,7 +247,7 @@ class AuthController extends GetxController {
     }
   }
 
-  // -------------------- CLOSE DIALOGS --------------------
+  // CLOSE DIALOGS
   void _closeAllDialogs() {
     while (Get.isDialogOpen ?? false) {
       Get.back();

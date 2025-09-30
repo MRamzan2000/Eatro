@@ -1,32 +1,21 @@
+import 'package:eatro/controller/getx_controller/fav_controller.dart';
+import 'package:eatro/controller/getx_controller/recipe_controller.dart';
+import 'package:eatro/controller/utils/app_colors.dart';
 import 'package:eatro/controller/utils/app_styles.dart';
-import 'package:eatro/view/screens/recipe_Detail_screen.dart';
+import 'package:eatro/model/recipe_model.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
+import 'package:shimmer/shimmer.dart';
 
 class FavoritesScreen extends StatelessWidget {
-  FavoritesScreen({super.key});
-
-  final List<Map<String, dynamic>> favoriteRecipes = [
-    {
-      "title": "Avocado Quinoa Bowl",
-      "cuisine": "Global Fusion",
-      "image":
-          "https://media.istockphoto.com/id/1292202102/photo/traditional-avocado-salad-with-quinoa.jpg?s=612x612&w=0&k=20&c=0n8UHdFUr2qQQaC7V61itpthBcqhL_wy1W5eN1DH5pk=",
-      "tags": ["Lunch", "Dinner"],
-    },
-    {
-      "title": "Bamboo Shoots Stir-Fry",
-      "cuisine": "Thai",
-      "image":
-          "https://media.istockphoto.com/id/1096854592/photo/two-thai-women-traditionally-eating-a-selection-of-freshly-cooked-northern-thai-food-of.jpg?s=612x612&w=0&k=20&c=VeuUF-wNtAJkOfGMAosfGccuSKmBx91XhLxMMo9Ul7k=",
-      "tags": ["Dinner"],
-    },
-  ];
+  const FavoritesScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).primaryColor;
+    final FavoritesController favoritesController = Get.find<FavoritesController>();
+    final RecipeController recipeController = Get.find<RecipeController>();
 
     return Scaffold(
       appBar: AppBar(
@@ -52,23 +41,39 @@ class FavoritesScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              "You have ${favoriteRecipes.length} favorite recipes",
-              style: AppTextStyles.subHeading.copyWith(
-                fontSize: 16.sp,
-                color: Colors.black54,
+            Obx(
+                  () => Text(
+                "You have ${favoritesController.favorites.length} favorite recipes",
+                style: AppTextStyles.subHeading.copyWith(
+                  fontSize: 16.sp,
+                  color: Colors.black54,
+                ),
               ),
             ),
             SizedBox(height: 2.h),
-
-            /// Recipes List
             Expanded(
-              child: ListView.separated(
-                itemCount: favoriteRecipes.length,
-                separatorBuilder: (_, __) => SizedBox(height: 2.h),
-                itemBuilder: (context, index) {
-                  final recipe = favoriteRecipes[index];
-                  return _recipeCard(recipe, context, primaryColor);
+              child: Obx(
+                    () {
+                  if (recipeController.isLoading.value) {
+                    return _buildShimmerList();
+                  }
+
+                  final favoriteRecipes = recipeController.recipes
+                      .where((recipe) => favoritesController.favorites.contains(recipe.id))
+                      .toList();
+
+                  if (favoriteRecipes.isEmpty) {
+                    return _buildEmptyState();
+                  }
+
+                  return ListView.separated(
+                    itemCount: favoriteRecipes.length,
+                    separatorBuilder: (_, __) => SizedBox(height: 2.h),
+                    itemBuilder: (context, index) {
+                      final recipe = favoriteRecipes[index];
+                      return _recipeCard(recipe, context, primaryColor, favoritesController);
+                    },
+                  );
                 },
               ),
             ),
@@ -78,11 +83,134 @@ class FavoritesScreen extends StatelessWidget {
     );
   }
 
+  /// Shimmer List for Loading State
+  Widget _buildShimmerList() {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.only(top: 2.h),
+      itemCount: 3,
+      itemBuilder: (context, index) => Container(
+        margin: EdgeInsets.only(bottom: 2.h),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 6,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Shimmer.fromColors(
+          baseColor: Colors.grey.shade300,
+          highlightColor: Colors.grey.shade100,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                height: 22.h,
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  color: Colors.grey,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(height: 1.h),
+                    Container(
+                      height: 17.sp,
+                      width: 60.w,
+                      color: Colors.grey,
+                    ),
+                    SizedBox(height: 1.h),
+                    Container(
+                      height: 14.sp,
+                      width: 40.w,
+                      color: Colors.grey,
+                    ),
+                    SizedBox(height: 2.h),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          height: 15.sp,
+                          width: 20.w,
+                          color: Colors.grey,
+                        ),
+                        Container(
+                          height: 15.sp,
+                          width: 20.w,
+                          color: Colors.grey,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Empty State
+  Widget _buildEmptyState() {
+    return SizedBox(
+      height: 50.h,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.favorite_border,
+              size: 10.h,
+              color: Colors.grey.shade400,
+            ),
+            SizedBox(height: 2.h),
+            Text(
+              'No favorite recipes yet.',
+              style: AppTextStyles.headingLarge.copyWith(
+                fontSize: 16.sp,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            SizedBox(height: 2.h),
+            ElevatedButton(
+              onPressed: () => Get.back(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                'Browse Recipes',
+                style: AppTextStyles.subHeading.copyWith(
+                  color: Colors.white,
+                  fontSize: 15.sp,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Recipe Card
   Widget _recipeCard(
-    Map<String, dynamic> recipe,
-    BuildContext context,
-    Color primaryColor,
-  ) {
+      Recipe recipe,
+      BuildContext context,
+      Color primaryColor,
+      FavoritesController favoritesController,
+      ) {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
@@ -106,18 +234,38 @@ class FavoritesScreen extends StatelessWidget {
                   top: Radius.circular(16),
                 ),
                 child: Image.network(
-                  recipe["image"],
+                  recipe.image,
                   height: 22.h,
                   width: double.infinity,
                   fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    height: 22.h,
+                    width: double.infinity,
+                    color: Colors.grey.shade300,
+                    child: Icon(
+                      Icons.broken_image,
+                      color: Colors.grey.shade600,
+                      size: 5.h,
+                    ),
+                  ),
                 ),
               ),
               Positioned(
                 top: 10,
                 right: 10,
-                child: CircleAvatar(
-                  backgroundColor: Colors.white,
-                  child: Icon(Icons.favorite, color: Colors.red),
+                child: Obx(
+                      () => CircleAvatar(
+                    backgroundColor: Colors.white,
+                    child: IconButton(
+                      icon: Icon(
+                        favoritesController.isFavorite(recipe.id)
+                            ? Icons.favorite
+                            : Icons.favorite_border,
+                        color: Colors.red,
+                      ),
+                      onPressed: () => favoritesController.toggleFavorite(recipe.id),
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -130,7 +278,7 @@ class FavoritesScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  recipe["title"],
+                  recipe.name,
                   style: AppTextStyles.headingLarge.copyWith(
                     fontSize: 17.sp,
                     fontWeight: FontWeight.w700,
@@ -138,7 +286,7 @@ class FavoritesScreen extends StatelessWidget {
                 ),
                 SizedBox(height: 0.5.h),
                 Text(
-                  recipe["cuisine"],
+                  recipe.cuisine,
                   style: AppTextStyles.subHeading.copyWith(
                     fontSize: 14.sp,
                     color: Colors.black54,
@@ -150,25 +298,23 @@ class FavoritesScreen extends StatelessWidget {
                 Wrap(
                   spacing: 6,
                   runSpacing: -8,
-                  children:
-                      (recipe["tags"] as List<String>)
-                          .map(
-                            (tag) => Chip(
-                              side: BorderSide.none,
-                              label: Text(tag),
-                              backgroundColor: Colors.blue.shade50,
-                              labelStyle: AppTextStyles.subHeading.copyWith(
-                                color: Colors.blue,
-                              ),
-                              materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: -2,
-                              ),
-                            ),
-                          )
-                          .toList(),
+                  children: recipe.mealType
+                      .map(
+                        (tag) => Chip(
+                      side: BorderSide.none,
+                      label: Text(tag),
+                      backgroundColor: Colors.blue.shade50,
+                      labelStyle: AppTextStyles.subHeading.copyWith(
+                        color: Colors.blue,
+                      ),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: -2,
+                      ),
+                    ),
+                  )
+                      .toList(),
                 ),
                 SizedBox(height: 1.5.h),
 
@@ -180,11 +326,9 @@ class FavoritesScreen extends StatelessWidget {
                       flex: 2,
                       child: ElevatedButton(
                         onPressed: () {
-                          Get.to(()=>RecipeDetailPage(
-                            title: recipe["title"],
-                            cuisine: recipe["cuisine"],
-                            imageUrl: recipe["image"],
-                          ),);
+                          // Get.to(() => RecipeDetailPage(
+                          //   title: recipe,
+                          // ));
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: primaryColor,
@@ -208,7 +352,7 @@ class FavoritesScreen extends StatelessWidget {
                     Expanded(
                       flex: 1,
                       child: OutlinedButton(
-                        onPressed: () {},
+                        onPressed: () => favoritesController.toggleFavorite(recipe.id),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.red,
                           side: const BorderSide(color: Colors.red),

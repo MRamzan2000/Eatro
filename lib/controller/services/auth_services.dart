@@ -94,36 +94,6 @@ class AuthServices {
       return null;
     }
   }
-
-  // ------------------ GUEST SIGN IN ------------------
-  Future<User?> continueAsGuest() async {
-    UserCredential? result;
-    try {
-      result = await auth.signInAnonymously();
-
-      if (result.additionalUserInfo?.isNewUser ?? false) {
-        await addUser(
-          uid: result.user!.uid,
-          name: "Guest-${result.user!.uid.substring(0, 5)}",
-          email: "",
-        );
-      }
-      return result.user;
-    } on FirebaseAuthException catch (e) {
-      if (kDebugMode) print("Guest SignIn Error: ${e.message}");
-      if (result != null && result.user != null && (result.additionalUserInfo?.isNewUser ?? false)) {
-        await result.user!.delete();
-      }
-      return null;
-    } catch (e) {
-      if (kDebugMode) print("Unexpected Guest SignIn Error: $e");
-      if (result != null && result.user != null && (result.additionalUserInfo?.isNewUser ?? false)) {
-        await result.user!.delete();
-      }
-      return null;
-    }
-  }
-
   // ------------------ ADD USER TO FIRESTORE ------------------
   Future<void> addUser({
     required String uid,
