@@ -185,7 +185,6 @@ class SignInDialog extends StatelessWidget {
                         ? null
                         : () async {
                       try {
-                        await controller.signInWithGoogle();
                       } catch (e) {
                         // Error handled in controller
                       }

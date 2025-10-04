@@ -1,4 +1,3 @@
-// lib/controllers/recipe_controller.dart
 import 'dart:convert';
 import 'package:eatro/model/recipe_model.dart';
 import 'package:get/get.dart';
@@ -15,6 +14,14 @@ class RecipeController extends GetxController {
   static List<Recipe>? _recipesCache;
   static int _lastFetchTime = 0;
   static const int _cacheDuration = 2 * 60 * 1000; // 2 minutes
+
+  final List<String> pantryStaples = [
+    "salt",
+    "oil",
+    "water",
+    "sugar",
+    "soy sauce"
+  ];
 
   @override
   void onInit() {
@@ -45,14 +52,16 @@ class RecipeController extends GetxController {
           recipes.value = data
               .asMap()
               .entries
-              .map((e) => Recipe.fromJson(e.value as Map<String, dynamic>, e.key))
+              .map((e) =>
+              Recipe.fromJson(e.value as Map<String, dynamic>, e.key))
               .toList();
         }
         _recipesCache = recipes;
         _lastFetchTime = now;
       } else {
         recipes.value = _getSampleRecipes();
-        errorMessage('Server Error: ${response.statusCode}, using sample data.');
+        errorMessage(
+            'Server error: ${response.statusCode} - ${response.reasonPhrase}, using sample data.');
       }
     } catch (e) {
       recipes.value = _getSampleRecipes();
@@ -121,8 +130,39 @@ class RecipeController extends GetxController {
           carbs: 15,
         ),
       ),
-      // Add other sample recipes from googleSheetsService.ts...
-      // Omitted for brevity, but you can copy the remaining sample recipes from the React code
     ];
+  }
+
+  Map<String, List<Map<String, dynamic>>> searchRecipes(
+      List<String> userIngredients) {
+    List<Map<String, dynamic>> perfect = [];
+    List<Map<String, dynamic>> nearby = [];
+    List<Map<String, dynamic>> explore = [];
+
+    for (var recipe in recipes) {
+      final recipeIngredients = recipe.ingredients
+          .map((i) => i.toLowerCase().trim())
+          .toList();
+
+      var missing = recipeIngredients
+          .where((ingredient) =>
+      !userIngredients.contains(ingredient) &&
+          !pantryStaples.contains(ingredient))
+          .toList();
+
+      if (missing.isEmpty) {
+        perfect.add({"recipe": recipe, "missing": []});
+      } else if (missing.length <= 2) {
+        nearby.add({"recipe": recipe, "missing": missing});
+      } else {
+        explore.add({"recipe": recipe, "missing": missing});
+      }
+    }
+
+    return {
+      "perfect": perfect,
+      "nearby": nearby,
+      "explore": explore,
+    };
   }
 }

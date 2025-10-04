@@ -130,10 +130,11 @@ class AppSnackbar {
               elevation: 0,
             ),
             onPressed: () {
-              Navigator.pop(ctx);
               if (isLogout) {
                 controller.logout(context: context);
               } else {
+                print("Delete Account");
+                controller.deleteAccountAndLogout(context: context);
               }
             },
             child: Text(

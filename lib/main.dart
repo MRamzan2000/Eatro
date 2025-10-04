@@ -3,24 +3,42 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:eatro/controller/getx_controller/auth_controller.dart';
+import 'package:eatro/controller/getx_controller/preference_controller.dart';
+import 'package:eatro/controller/getx_controller/profile_controller.dart';
+import 'package:eatro/controller/getx_controller/recipe_controller.dart';
 import 'package:eatro/view/screens/splash_screen.dart';
 import 'package:eatro/controller/utils/app_colors.dart';
-
+import 'controller/getx_controller/fav_controller.dart' show FavoritesController;
+import 'controller/getx_controller/homeController.dart' show HomeController;
 import 'controller/utils/my_shared_pref.dart';
+
 final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey =
 GlobalKey<ScaffoldMessengerState>();
-void main() async {
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await SharedPrefHelper.init();
+
+  // Initialize Firebase
   await Firebase.initializeApp(
-    options: FirebaseOptions(
+    options: const FirebaseOptions(
       apiKey: "AIzaSyBIBgj55NZynR32KYFPabXiCQ5i9DsWPTc",
       appId: "1:31803384853:android:1d94d7eff35b6b8b37da1c",
       messagingSenderId: "31803384853",
       projectId: "eatro-cd012",
     ),
   );
+
+  // Initialize Shared Preferences
+  await SharedPrefHelper.init();
+
+  // Initialize GetX Controllers
   Get.put(AuthController());
+  Get.put(FavoritesController());
+  Get.put(HomeController());
+  Get.put(PreferenceController());
+  Get.put(ProfileController());
+  Get.put(RecipeController());
+
   runApp(const MyApp());
 }
 
@@ -32,7 +50,7 @@ class MyApp extends StatelessWidget {
     return ResponsiveSizer(
       builder: (context, orientation, screenType) {
         return GetMaterialApp(
-          scaffoldMessengerKey: rootScaffoldMessengerKey, // 👈 set here
+          scaffoldMessengerKey: rootScaffoldMessengerKey,
           title: "Eatro",
           debugShowCheckedModeBanner: false,
           theme: ThemeData(
@@ -41,7 +59,7 @@ class MyApp extends StatelessWidget {
             appBarTheme: AppBarTheme(
               backgroundColor: AppColors.cardBgColor,
               elevation: 0,
-              centerTitle: true,
+              centerTitle: false,
               titleTextStyle: TextStyle(
                 color: AppColors.headingColor,
                 fontSize: 18,

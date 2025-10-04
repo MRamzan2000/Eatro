@@ -15,7 +15,7 @@ class CustomTextField extends StatelessWidget {
   const CustomTextField({
     super.key,
     required this.hintText,
-    this.prefixIcon, // ab optional
+    this.prefixIcon,
     this.controller,
     this.keyboardType = TextInputType.text,
     this.obscureText = false,
@@ -48,7 +48,6 @@ class CustomTextField extends StatelessWidget {
           borderSide: BorderSide(color: AppColors.primaryColor, width: 1.5),
         ),
 
-        // Prefix Icon agar diya ho to hi show hoga
         prefixIcon: prefixIcon != null
             ? Padding(
           padding: EdgeInsets.only(left: 2.w),
@@ -65,7 +64,7 @@ class CustomTextField extends StatelessWidget {
             : null,
 
         isDense: true,
-        contentPadding: EdgeInsets.symmetric(vertical: 1.6.h, horizontal: 2.w),
+        contentPadding: EdgeInsets.symmetric(vertical: 1.5.h, horizontal: 2.w),
       ),
     );
   }
